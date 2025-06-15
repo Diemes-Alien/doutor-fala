@@ -8,10 +8,18 @@
 </head>
 <body>
   <h1>Cadastrar Médico</h1>
+  <label for="nome">Nome:</label><br />
   <input id="nome" placeholder="Nome" /><br />
+
+  <label for="cpf">CPF:</label><br />
   <input id="cpf" placeholder="CPF" /><br />
+
+  <label for="crm">CRM:</label><br />
   <input id="crm" placeholder="CRM" /><br />
-  <input id="data_nascimento" type="date" placeholder="Data de Nascimento" /><br />
+
+  <label for="data_nascimento">Data de Nascimento do Médico:</label><br />
+  <input id="data_nascimento" type="date" /><br />
+
   <button onclick="cadastrarMedico()">Cadastrar</button>
 
   <h2>Lista de Médicos</h2>
@@ -21,15 +29,23 @@
   <hr />
 
   <h1>Cadastrar Paciente</h1>
+  <label for="nome_paciente">Nome:</label><br />
   <input id="nome_paciente" placeholder="Nome" /><br />
+
+  <label for="cpf_paciente">CPF:</label><br />
   <input id="cpf_paciente" placeholder="CPF" /><br />
+
+  <label for="plano_paciente">Plano:</label><br />
   <select id="plano_paciente">
     <option value="">Selecione o plano</option>
     <option value="plano_1">Plano 1</option>
     <option value="plano_2">Plano 2</option>
     <option value="plano_3">Plano 3</option>
   </select><br />
-  <input id="data_nascimento_paciente" type="date" placeholder="Data de Nascimento" /><br />
+
+  <label for="data_nascimento_paciente">Data de Nascimento do Paciente:</label><br />
+  <input id="data_nascimento_paciente" type="date" /><br />
+
   <button onclick="cadastrarPaciente()">Cadastrar Paciente</button>
 
   <h2>Lista de Pacientes</h2>
@@ -44,8 +60,7 @@
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // MÉDICOS
-
+    // Funções Médico
     window.cadastrarMedico = async function () {
       const nome = document.getElementById('nome').value.trim()
       const cpf = document.getElementById('cpf').value.trim()
@@ -62,8 +77,7 @@
         .insert([{ nome, cpf, crm, data_nascimento }])
 
       if (error) {
-        console.error('Erro ao cadastrar:', error)
-        alert('Erro ao cadastrar: ' + error.message)
+        alert('Erro ao cadastrar médico: ' + error.message)
       } else {
         alert('Médico cadastrado com sucesso!')
         limparCamposMedico()
@@ -71,84 +85,49 @@
       }
     }
 
-    window.listarMedicos = async function () {
-      const { data, error } = await supabase
-        .from('medicos')
-        .select('*')
+   window.listarMedicos = async function () {
+  const { data, error } = await supabase
+    .from('medicos')
+    .select('*')
 
-      if (error) {
-        console.error('Erro ao listar médicos:', error)
-        return
-      }
+  const lista = document.getElementById('lista-medicos')
+  lista.innerHTML = ''
 
-      const lista = document.getElementById('lista-medicos')
-      lista.innerHTML = ''
-
-      data.forEach(medico => {
-        lista.innerHTML += `
-          <li>
-            <strong>${medico.nome}</strong> | CRM: ${medico.crm} | CPF: ${medico.cpf}
+  if (data) {
+    data.forEach(medico => {
+      lista.innerHTML += `
+        <li>
+          <span><strong>${medico.nome}</strong> | CRM: ${medico.crm} | CPF: ${medico.cpf}</span>
+          <div>
             <button onclick="editarMedico('${medico.id}')">Editar</button>
             <button onclick="excluirMedico('${medico.id}')">Excluir</button>
-          </li>
-        `
-      })
-    }
+          </div>
+        </li>
+      `
+    })
+  }
+}
+
+
 
     window.excluirMedico = async function (id) {
-      const confirmar = confirm('Tem certeza que deseja excluir este médico?')
-      if (!confirmar) return
-
-      const { error } = await supabase
-        .from('medicos')
-        .delete()
-        .eq('id', id)
-
-      if (error) {
-        console.error('Erro ao excluir:', error)
-        alert('Erro ao excluir: ' + error.message)
-      } else {
-        alert('Médico excluído com sucesso!')
-        listarMedicos()
-      }
+      if (!confirm('Tem certeza que deseja excluir este médico?')) return
+      await supabase.from('medicos').delete().eq('id', id)
+      listarMedicos()
     }
 
     window.editarMedico = async function (id) {
-      // Buscar dados atuais
-      const { data, error } = await supabase
-        .from('medicos')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) {
-        alert('Erro ao buscar dados do médico: ' + error.message)
-        return
-      }
-
+      const { data } = await supabase.from('medicos').select('*').eq('id', id).single()
       const nome = prompt('Nome:', data.nome)
-      if (nome === null) return
       const cpf = prompt('CPF:', data.cpf)
-      if (cpf === null) return
       const crm = prompt('CRM:', data.crm)
-      if (crm === null) return
       const data_nascimento = prompt('Data de Nascimento (YYYY-MM-DD):', data.data_nascimento)
-      if (data_nascimento === null) return
 
-      if (!nome.trim() || !cpf.trim() || !crm.trim() || !data_nascimento.trim()) {
-        alert('Todos os campos são obrigatórios.')
-        return
-      }
-
-      const { error: updateError } = await supabase
-        .from('medicos')
-        .update({ nome: nome.trim(), cpf: cpf.trim(), crm: crm.trim(), data_nascimento: data_nascimento.trim() })
-        .eq('id', id)
-
-      if (updateError) {
-        alert('Erro ao atualizar médico: ' + updateError.message)
-      } else {
-        alert('Médico atualizado com sucesso!')
+      if (nome && cpf && crm && data_nascimento) {
+        await supabase
+          .from('medicos')
+          .update({ nome, cpf, crm, data_nascimento })
+          .eq('id', id)
         listarMedicos()
       }
     }
@@ -160,8 +139,7 @@
       document.getElementById('data_nascimento').value = ''
     }
 
-    // PACIENTES
-
+    // Funções Paciente
     window.cadastrarPaciente = async function () {
       const nome = document.getElementById('nome_paciente').value.trim()
       const cpf = document.getElementById('cpf_paciente').value.trim()
@@ -178,7 +156,6 @@
         .insert([{ nome, cpf, plano, data_nascimento }])
 
       if (error) {
-        console.error('Erro ao cadastrar paciente:', error)
         alert('Erro ao cadastrar paciente: ' + error.message)
       } else {
         alert('Paciente cadastrado com sucesso!')
@@ -187,91 +164,45 @@
       }
     }
 
-    window.listarPacientes = async function () {
-      const { data, error } = await supabase
-        .from('pacientes')
-        .select('*')
+ window.listarPacientes = async function () {
+  const { data } = await supabase.from('pacientes').select('*')
+  const lista = document.getElementById('lista-pacientes')
+  lista.innerHTML = ''
 
-      if (error) {
-        console.error('Erro ao listar pacientes:', error)
-        return
-      }
-
-      const lista = document.getElementById('lista-pacientes')
-      lista.innerHTML = ''
-
-      data.forEach(paciente => {
-        lista.innerHTML += `
-          <li>
-            <strong>${paciente.nome}</strong> | CPF: ${paciente.cpf} | Plano: ${paciente.plano}
+  if (data) {
+    data.forEach(paciente => {
+      lista.innerHTML += `
+        <li>
+          <span><strong>${paciente.nome}</strong> | CPF: ${paciente.cpf} | Plano: ${paciente.plano}</span>
+          <div>
             <button onclick="editarPaciente('${paciente.id}')">Editar</button>
             <button onclick="excluirPaciente('${paciente.id}')">Excluir</button>
-          </li>
-        `
-      })
-    }
+          </div>
+        </li>
+      `
+    })
+  }
+}
+
 
     window.excluirPaciente = async function (id) {
-      const confirmar = confirm('Tem certeza que deseja excluir este paciente?')
-      if (!confirmar) return
-
-      const { error } = await supabase
-        .from('pacientes')
-        .delete()
-        .eq('id', id)
-
-      if (error) {
-        console.error('Erro ao excluir paciente:', error)
-        alert('Erro ao excluir paciente: ' + error.message)
-      } else {
-        alert('Paciente excluído com sucesso!')
-        listarPacientes()
-      }
+      if (!confirm('Tem certeza que deseja excluir este paciente?')) return
+      await supabase.from('pacientes').delete().eq('id', id)
+      listarPacientes()
     }
 
     window.editarPaciente = async function (id) {
-      // Buscar dados atuais
-      const { data, error } = await supabase
-        .from('pacientes')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) {
-        alert('Erro ao buscar dados do paciente: ' + error.message)
-        return
-      }
-
+      const { data } = await supabase.from('pacientes').select('*').eq('id', id).single()
       const nome = prompt('Nome:', data.nome)
-      if (nome === null) return
       const cpf = prompt('CPF:', data.cpf)
-      if (cpf === null) return
-
-      // Para plano, pedimos que escolha um dos valores válidos:
-      const plano = prompt('Plano (plano_1, plano_2, plano_3):', data.plano)
-      if (plano === null) return
-      if (!['plano_1', 'plano_2', 'plano_3'].includes(plano.trim())) {
-        alert('Plano inválido. Use plano_1, plano_2 ou plano_3.')
-        return
-      }
-
+      const plano = prompt('Plano (plano_1, plano_2 ou plano_3):', data.plano)
       const data_nascimento = prompt('Data de Nascimento (YYYY-MM-DD):', data.data_nascimento)
-      if (data_nascimento === null) return
 
-      if (!nome.trim() || !cpf.trim() || !plano.trim() || !data_nascimento.trim()) {
-        alert('Todos os campos são obrigatórios.')
-        return
-      }
-
-      const { error: updateError } = await supabase
-        .from('pacientes')
-        .update({ nome: nome.trim(), cpf: cpf.trim(), plano: plano.trim(), data_nascimento: data_nascimento.trim() })
-        .eq('id', id)
-
-      if (updateError) {
-        alert('Erro ao atualizar paciente: ' + updateError.message)
-      } else {
-        alert('Paciente atualizado com sucesso!')
+      if (nome && cpf && plano && data_nascimento) {
+        await supabase
+          .from('pacientes')
+          .update({ nome, cpf, plano, data_nascimento })
+          .eq('id', id)
         listarPacientes()
       }
     }
@@ -283,7 +214,6 @@
       document.getElementById('data_nascimento_paciente').value = ''
     }
 
-    // Listar dados assim que a página carregar
     listarMedicos()
     listarPacientes()
   </script>
